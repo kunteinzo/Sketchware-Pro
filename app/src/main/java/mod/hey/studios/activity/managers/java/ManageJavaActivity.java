@@ -19,8 +19,6 @@ import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.github.angads25.filepicker.model.DialogConfigs;
@@ -50,8 +48,6 @@ import pro.sketchware.utility.FileResConfig;
 import pro.sketchware.utility.FileUtil;
 import mod.hey.studios.code.SrcCodeEditor;
 import mod.hey.studios.util.Helper;
-import mod.hilal.saif.activities.tools.ConfigActivity;
-import mod.jbk.util.AddMarginOnApplyWindowInsetsListener;
 
 public class ManageJavaActivity extends BaseAppCompatActivity {
 
@@ -152,8 +148,6 @@ public class ManageJavaActivity extends BaseAppCompatActivity {
             hideShowOptionsButton(true);
         });
 
-        ViewCompat.setOnApplyWindowInsetsListener(binding.createNewButton,
-                new AddMarginOnApplyWindowInsetsListener(WindowInsetsCompat.Type.navigationBars(), WindowInsetsCompat.CONSUMED));
     }
 
     private void hideShowOptionsButton(boolean isHide) {
@@ -208,12 +202,12 @@ public class ManageJavaActivity extends BaseAppCompatActivity {
 
             Button positiveButton = ((androidx.appcompat.app.AlertDialog) dialogInterface).getButton(DialogInterface.BUTTON_POSITIVE);
             positiveButton.setOnClickListener(view -> {
-                if (inputText.getText().toString().isEmpty()) {
+                if (Helper.getText(inputText).isEmpty()) {
                     SketchwareUtil.toastError("Invalid file name");
                     return;
                 }
 
-                String name = inputText.getText().toString();
+                String name = Helper.getText(inputText);
                 String packageName = getCurrentPkgName();
 
                 String extension;
@@ -323,7 +317,7 @@ public class ManageJavaActivity extends BaseAppCompatActivity {
                 .setView(dialogBinding.getRoot())
                 .setNegativeButton("Cancel", (dialogInterface, i) -> dialogInterface.dismiss())
                 .setPositiveButton("Rename", (dialogInterface, i) -> {
-                    if (!inputText.getText().toString().isEmpty()) {
+                    if (!Helper.getText(inputText).isEmpty()) {
                         if (!filesAdapter.isFolder(position)) {
                             if (frc.getJavaManifestList().contains(filesAdapter.getFullName(position))) {
                                 frc.getJavaManifestList().remove(filesAdapter.getFullName(position));
@@ -335,11 +329,11 @@ public class ManageJavaActivity extends BaseAppCompatActivity {
                                 String fileContent = FileUtil.readFile(filesAdapter.getItem(position));
                                 FileUtil.writeFile(filesAdapter.getItem(position),
                                         fileContent.replaceAll(filesAdapter.getFileNameWoExt(position),
-                                                FileUtil.getFileNameNoExtension(inputText.getText().toString())));
+                                                FileUtil.getFileNameNoExtension(Helper.getText(inputText))));
                             }
                         }
 
-                        FileUtil.renameFile(filesAdapter.getItem(position), new File(current_path, inputText.getText().toString()).getAbsolutePath());
+                        FileUtil.renameFile(filesAdapter.getItem(position), new File(current_path, Helper.getText(inputText)).getAbsolutePath());
                         refresh();
                         SketchwareUtil.toast("Renamed successfully");
                     }

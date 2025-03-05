@@ -1,5 +1,7 @@
 package pro.sketchware.fragments.settings.events.creator;
 
+import static pro.sketchware.utility.GsonUtils.getGson;
+
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,8 +11,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
-
-import com.google.gson.Gson;
 
 import pro.sketchware.R;
 import pro.sketchware.databinding.FragmentEventsManagerCreatorBinding;
@@ -75,7 +75,7 @@ public class EventsManagerCreatorFragment extends qA {
         if (isEdit) {
             fillUp();
         }
-
+        binding.toolbar.setNavigationOnClickListener(v -> requireActivity().onBackPressed());
         return view;
     }
 
@@ -91,22 +91,21 @@ public class EventsManagerCreatorFragment extends qA {
 
     private boolean filledIn() {
         if (isActivityEvent) {
-            return !binding.eventsCreatorEventname.getText().toString().isEmpty()
-                    && !binding.eventsCreatorSpec.getText().toString().isEmpty()
-                    && !binding.eventsCreatorCode.getText().toString().isEmpty();
+            return !Helper.getText(binding.eventsCreatorEventname).isEmpty()
+                    && !Helper.getText(binding.eventsCreatorSpec).isEmpty()
+                    && !Helper.getText(binding.eventsCreatorCode).isEmpty();
         } else {
-            return !binding.eventsCreatorEventname.getText().toString().isEmpty()
-                    && !binding.eventsCreatorVarname.getText().toString().isEmpty()
-                    && !binding.eventsCreatorIcon.getText().toString().isEmpty()
-                    && !binding.eventsCreatorSpec.getText().toString().isEmpty()
-                    && !binding.eventsCreatorCode.getText().toString().isEmpty();
+            return !Helper.getText(binding.eventsCreatorEventname).isEmpty()
+                    && !Helper.getText(binding.eventsCreatorVarname).isEmpty()
+                    && !Helper.getText(binding.eventsCreatorIcon).isEmpty()
+                    && !Helper.getText(binding.eventsCreatorSpec).isEmpty()
+                    && !Helper.getText(binding.eventsCreatorCode).isEmpty();
         }
     }
 
     private void getViewsById() {
         ((View) binding.eventsCreatorListenercode.getParent().getParent()).setVisibility(View.GONE);
         binding.eventsCreatorChooseicon.setImageResource(R.drawable.ic_mtrl_add);
-        binding.eventsCreatorCheckbox.setVisibility(View.GONE);
         if (isActivityEvent) {
             binding.eventsCreatorVarname.setText("");
             ((View) binding.eventsCreatorVarname.getParent().getParent()).setVisibility(View.GONE);
@@ -131,7 +130,7 @@ public class EventsManagerCreatorFragment extends qA {
             SketchwareUtil.toast("Some required fields are empty!");
             return;
         }
-        if (!OldResourceIdMapper.isValidIconId(binding.eventsCreatorIcon.getText().toString())) {
+        if (!OldResourceIdMapper.isValidIconId(Helper.getText(binding.eventsCreatorIcon))) {
             binding.eventsCreatorIconTil.setError("Invalid icon ID");
             binding.eventsCreatorIcon.requestFocus();
             return;
@@ -139,7 +138,7 @@ public class EventsManagerCreatorFragment extends qA {
         ArrayList<HashMap<String, Object>> arrayList;
         String concat = FileUtil.getExternalStorageDir().concat("/.sketchware/data/system/events.json");
         if (FileUtil.isExistFile(concat)) {
-            arrayList = new Gson().fromJson(FileUtil.readFile(concat), Helper.TYPE_MAP_LIST);
+            arrayList = getGson().fromJson(FileUtil.readFile(concat), Helper.TYPE_MAP_LIST);
         } else {
             arrayList = new ArrayList<>();
         }
@@ -147,22 +146,22 @@ public class EventsManagerCreatorFragment extends qA {
         if (isEdit) {
             hashMap = arrayList.get(figureP(_name));
         }
-        hashMap.put("name", binding.eventsCreatorEventname.getText().toString());
-        hashMap.put("var", binding.eventsCreatorVarname.getText().toString());
+        hashMap.put("name", Helper.getText(binding.eventsCreatorEventname));
+        hashMap.put("var", Helper.getText(binding.eventsCreatorVarname));
         if (isActivityEvent) {
             hashMap.put("listener", "");
         } else {
             hashMap.put("listener", lisName);
         }
-        hashMap.put("icon", binding.eventsCreatorIcon.getText().toString());
-        hashMap.put("description", binding.eventsCreatorDesc.getText().toString());
-        hashMap.put("parameters", binding.eventsCreatorParams.getText().toString());
-        hashMap.put("code", binding.eventsCreatorCode.getText().toString());
-        hashMap.put("headerSpec", binding.eventsCreatorSpec.getText().toString());
+        hashMap.put("icon", Helper.getText(binding.eventsCreatorIcon));
+        hashMap.put("description", Helper.getText(binding.eventsCreatorDesc));
+        hashMap.put("parameters", Helper.getText(binding.eventsCreatorParams));
+        hashMap.put("code", Helper.getText(binding.eventsCreatorCode));
+        hashMap.put("headerSpec", Helper.getText(binding.eventsCreatorSpec));
         if (!isEdit) {
             arrayList.add(hashMap);
         }
-        FileUtil.writeFile(concat, new Gson().toJson(arrayList));
+        FileUtil.writeFile(concat, getGson().toJson(arrayList));
         SketchwareUtil.toast("Saved");
         getParentFragmentManager().popBackStack();
     }
@@ -170,7 +169,7 @@ public class EventsManagerCreatorFragment extends qA {
     private int figureP(String str) {
         String concat = FileUtil.getExternalStorageDir().concat("/.sketchware/data/system/events.json");
         if (FileUtil.isExistFile(concat)) {
-            ArrayList<HashMap<String, Object>> arrayList = new Gson().fromJson(FileUtil.readFile(concat), Helper.TYPE_MAP_LIST);
+            ArrayList<HashMap<String, Object>> arrayList = getGson().fromJson(FileUtil.readFile(concat), Helper.TYPE_MAP_LIST);
             for (int i = 0; i < arrayList.size(); i++) {
                 if (str.equals(arrayList.get(i).get("name"))) {
                     return i;

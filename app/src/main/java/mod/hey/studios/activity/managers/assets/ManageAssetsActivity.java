@@ -17,8 +17,6 @@ import android.widget.PopupMenu;
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
@@ -48,7 +46,6 @@ import pro.sketchware.utility.FilePathUtil;
 import pro.sketchware.utility.FileUtil;
 import mod.hey.studios.code.SrcCodeEditor;
 import mod.hey.studios.util.Helper;
-import mod.jbk.util.AddMarginOnApplyWindowInsetsListener;
 
 public class ManageAssetsActivity extends BaseAppCompatActivity {
 
@@ -90,8 +87,6 @@ public class ManageAssetsActivity extends BaseAppCompatActivity {
             hideShowOptionsButton(true);
         });
 
-        ViewCompat.setOnApplyWindowInsetsListener(binding.createNewButton,
-                new AddMarginOnApplyWindowInsetsListener(WindowInsetsCompat.Type.navigationBars(), WindowInsetsCompat.CONSUMED));
     }
 
     private void hideShowOptionsButton(boolean isHide) {
@@ -135,7 +130,7 @@ public class ManageAssetsActivity extends BaseAppCompatActivity {
         dialog.setOnShowListener(dialogInterface -> {
             Button positiveButton = ((AlertDialog) dialogInterface).getButton(DialogInterface.BUTTON_POSITIVE);
             positiveButton.setOnClickListener(view -> {
-                String editable = inputText.getText().toString().trim();
+                String editable = Helper.getText(inputText).trim();
 
                 if (editable.isEmpty()) {
                     SketchwareUtil.toastError("Invalid name");
@@ -205,8 +200,8 @@ public class ManageAssetsActivity extends BaseAppCompatActivity {
                 .setView(dialogBinding.getRoot())
                 .setNegativeButton("Cancel", (dialogInterface, i) -> dialogInterface.dismiss())
                 .setPositiveButton("Rename", (dialogInterface, i) -> {
-                    if (!inputText.getText().toString().isEmpty()) {
-                        FileUtil.renameFile(assetsAdapter.getItem(position), new File(current_path, inputText.getText().toString()).getAbsolutePath());
+                    if (!Helper.getText(inputText).isEmpty()) {
+                        FileUtil.renameFile(assetsAdapter.getItem(position), new File(current_path, Helper.getText(inputText)).getAbsolutePath());
                         refresh();
                         SketchwareUtil.toast("Renamed successfully");
                     }

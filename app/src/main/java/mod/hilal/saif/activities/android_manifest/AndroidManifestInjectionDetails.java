@@ -1,6 +1,7 @@
 package mod.hilal.saif.activities.android_manifest;
 
 import static pro.sketchware.utility.SketchwareUtil.getDip;
+import static pro.sketchware.utility.GsonUtils.getGson;
 
 import android.os.Bundle;
 import android.text.SpannableString;
@@ -12,7 +13,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.gson.Gson;
 
 import pro.sketchware.utility.ThemeUtils;
 import pro.sketchware.R;
@@ -86,7 +86,7 @@ public class AndroidManifestInjectionDetails extends BaseAppCompatActivity {
         listMap.clear();
         ArrayList<HashMap<String, Object>> data;
         if (FileUtil.isExistFile(ATTRIBUTES_FILE_PATH)) {
-            data = new Gson().fromJson(FileUtil.readFile(ATTRIBUTES_FILE_PATH), Helper.TYPE_MAP_LIST);
+            data = getGson().fromJson(FileUtil.readFile(ATTRIBUTES_FILE_PATH), Helper.TYPE_MAP_LIST);
             for (HashMap<String, Object> item : data) {
                 String str = (String) item.get("name");
                 if (str.equals(constant)) {
@@ -135,7 +135,7 @@ public class AndroidManifestInjectionDetails extends BaseAppCompatActivity {
         attributeBinding.inputText.setText((String) listMap.get(pos).get("value"));
         attributeBinding.inputText.setHint("android:attr=\"value\"");
         dialog.setPositiveButton(R.string.common_word_save, (dialog1, which) -> {
-            listMap.get(pos).put("value", attributeBinding.inputText.getText().toString());
+            listMap.get(pos).put("value", Helper.getText(attributeBinding.inputText));
             applyChange();
         });
 
@@ -153,7 +153,7 @@ public class AndroidManifestInjectionDetails extends BaseAppCompatActivity {
             attributeBinding.inputLayoutValue.setHint("permission");
         }
         dialog.setPositiveButton(R.string.common_word_save, (dialog1, which) -> {
-            String fstr = attributeBinding.inputRes.getText().toString().trim() + ":" + attributeBinding.inputAttr.getText().toString().trim() + "=\"" + attributeBinding.inputValue.getText().toString().trim() + "\"";
+            String fstr = Helper.getText(attributeBinding.inputRes).trim() + ":" + Helper.getText(attributeBinding.inputAttr).trim() + "=\"" + Helper.getText(attributeBinding.inputValue).trim() + "\"";
             HashMap<String, Object> map = new HashMap<>();
             map.put("name", constant);
             map.put("value", fstr);
@@ -168,7 +168,7 @@ public class AndroidManifestInjectionDetails extends BaseAppCompatActivity {
     private void applyChange() {
         ArrayList<HashMap<String, Object>> data;
         if (FileUtil.isExistFile(ATTRIBUTES_FILE_PATH)) {
-            data = new Gson().fromJson(FileUtil.readFile(ATTRIBUTES_FILE_PATH), Helper.TYPE_MAP_LIST);
+            data = getGson().fromJson(FileUtil.readFile(ATTRIBUTES_FILE_PATH), Helper.TYPE_MAP_LIST);
             for (int i = data.size() - 1; i > -1; i--) {
                 String str = (String) data.get(i).get("name");
                 if (str.equals(constant)) {
@@ -179,7 +179,7 @@ public class AndroidManifestInjectionDetails extends BaseAppCompatActivity {
         } else {
             data = new ArrayList<>(listMap);
         }
-        FileUtil.writeFile(ATTRIBUTES_FILE_PATH, new Gson().toJson(data));
+        FileUtil.writeFile(ATTRIBUTES_FILE_PATH, getGson().toJson(data));
         refreshList();
     }
 

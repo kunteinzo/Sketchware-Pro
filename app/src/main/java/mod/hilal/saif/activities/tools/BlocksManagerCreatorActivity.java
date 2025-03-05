@@ -1,5 +1,8 @@
 package mod.hilal.saif.activities.tools;
 
+import static pro.sketchware.utility.GsonUtils.getGson;
+
+import android.annotation.SuppressLint;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
@@ -22,14 +25,13 @@ import a.a.a.Zx;
 import com.besome.sketch.lib.base.BaseAppCompatActivity;
 import com.google.android.material.color.MaterialColors;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 
 import mod.hey.studios.util.Helper;
 import mod.hilal.saif.lib.PCP;
 
 import pro.sketchware.R;
-import pro.sketchware.databinding.BlocksManagerCreatorBinding;
+import pro.sketchware.databinding.ActivityBlocksManagerCreatorBinding;
 import pro.sketchware.lib.base.BaseTextWatcher;
 import pro.sketchware.lib.highlighter.SimpleHighlighter;
 import pro.sketchware.utility.FileUtil;
@@ -47,7 +49,7 @@ import java.util.regex.Pattern;
 
 public class BlocksManagerCreatorActivity extends BaseAppCompatActivity {
 
-    private BlocksManagerCreatorBinding binding;
+    private ActivityBlocksManagerCreatorBinding binding;
     private final ArrayList<String> id_detector = new ArrayList<>();
     private ArrayList<HashMap<String, Object>> blocksList = new ArrayList<>();
     
@@ -67,7 +69,7 @@ public class BlocksManagerCreatorActivity extends BaseAppCompatActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        binding = BlocksManagerCreatorBinding.inflate(getLayoutInflater());
+        binding = ActivityBlocksManagerCreatorBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         initialize();
         initializeLogic();
@@ -79,6 +81,7 @@ public class BlocksManagerCreatorActivity extends BaseAppCompatActivity {
         binding = null;
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private void initialize() {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -130,7 +133,7 @@ public class BlocksManagerCreatorActivity extends BaseAppCompatActivity {
             AtomicInteger choice = new AtomicInteger();
             new MaterialAlertDialogBuilder(this).setTitle("Block type")
                     .setSingleChoiceItems(choices.toArray(new String[0]),
-                            types.indexOf(binding.type.getText().toString()), (dialog, which) -> choice.set(which))
+                            types.indexOf(Helper.getText(binding.type)), (dialog, which) -> choice.set(which))
                     .setPositiveButton(R.string.common_word_save, (dialog, which) -> binding.type.setText(types.get(choice.get())))
                     .setNegativeButton(R.string.common_word_cancel, null)
                     .create().show();
@@ -150,14 +153,14 @@ public class BlocksManagerCreatorActivity extends BaseAppCompatActivity {
                     TransitionManager.beginDelayedTransition(binding.scrollView, transition);
                     binding.spec2InputLayout.setVisibility(View.GONE);
                 }
-                updateBlockSpec(s.toString(), binding.colour.getText().toString());
+                updateBlockSpec(s.toString(), Helper.getText(binding.colour));
             }
         });
 
         binding.spec.addTextChangedListener(new BaseTextWatcher() {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                updateBlockSpec(binding.type.getText().toString(), binding.colour.getText().toString());
+                updateBlockSpec(Helper.getText(binding.type), Helper.getText(binding.colour));
             }
         });
 
@@ -175,22 +178,22 @@ public class BlocksManagerCreatorActivity extends BaseAppCompatActivity {
                 } else {
                     binding.colourLay.setError(null);
                 }
-                updateBlockSpec(binding.type.getText().toString(), s.toString());
+                updateBlockSpec(Helper.getText(binding.type), s.toString());
             }
         });
 
         binding.cancel.setOnClickListener(Helper.getBackPressedClickListener(this));
         binding.save.setOnClickListener(v -> {
-            if (!PropertiesUtil.isHexColor(binding.colour.getText().toString())) {
+            if (!PropertiesUtil.isHexColor(Helper.getText(binding.colour))) {
                 SketchwareUtil.showMessage(getApplicationContext(), "Invalid hex color");
                 return;
             }
-            Matcher matcher = PARAM_PATTERN.matcher(binding.spec.getText().toString());
+            Matcher matcher = PARAM_PATTERN.matcher(Helper.getText(binding.spec));
             if (matcher.find()) {
                 SketchwareUtil.showMessage(getApplicationContext(), "Invalid block params");
                 return;
             }
-            if (binding.type.getText().toString().isEmpty()) {
+            if (Helper.getText(binding.type).isEmpty()) {
                 binding.type.setText(" ");
             }
             if (mode.equals("add")) {
@@ -243,7 +246,7 @@ public class BlocksManagerCreatorActivity extends BaseAppCompatActivity {
         textView.setTextSize(14.0f);
         textView.setTypeface(Typeface.DEFAULT_BOLD);
         textView.setOnClickListener(v -> {
-            StringBuilder sb = new StringBuilder(binding.spec.getText().toString());
+            StringBuilder sb = new StringBuilder(Helper.getText(binding.spec));
             int selectionStart = binding.spec.getSelectionStart();
             sb.insert(selectionStart, menu);
             binding.spec.setText(sb);
@@ -396,7 +399,7 @@ public class BlocksManagerCreatorActivity extends BaseAppCompatActivity {
 
     private void getBlockList() {
         try {
-            blocksList = new Gson().fromJson(FileUtil.readFile(path), Helper.TYPE_MAP_LIST);
+            blocksList = getGson().fromJson(FileUtil.readFile(path), Helper.TYPE_MAP_LIST);
 
             if (blocksList != null) {
                 for (int i = 0, blocksListSize = blocksList.size(); i < blocksListSize; i++) {
@@ -421,13 +424,13 @@ public class BlocksManagerCreatorActivity extends BaseAppCompatActivity {
         binding.blockArea.removeAllViews();
         var blockType = specId.equalsIgnoreCase("regular") ? " " : specId;
         try {
-            var block = new Rs(this, -1, binding.spec.getText().toString(), blockType, binding.name.getText().toString());
+            var block = new Rs(this, -1, Helper.getText(binding.spec), blockType, Helper.getText(binding.name));
             block.e = PropertiesUtil.isHexColor(color) ? PropertiesUtil.parseColor(color) : Color.parseColor("#F0F0F0");
             binding.blockArea.addView(block);
         } catch (Exception e) {
             var block = new TextView(this);
             block.setTextColor(Color.RED);
-            var input = binding.spec.getText().toString();
+            var input = Helper.getText(binding.spec);
             Matcher matcher = PARAM_PATTERN.matcher(input);
             if (matcher.find()) {
                 int position = matcher.end();
@@ -442,73 +445,73 @@ public class BlocksManagerCreatorActivity extends BaseAppCompatActivity {
 
     private void addBlock() {
         HashMap<String, Object> tempMap = new HashMap<>();
-        tempMap.put("name", binding.name.getText().toString());
-        if (binding.type.getText().toString().equals("regular")) {
+        tempMap.put("name", Helper.getText(binding.name));
+        if (Helper.getText(binding.type).equals("regular")) {
             tempMap.put("type", " ");
-        } else if (binding.type.getText().toString().isEmpty()) {
+        } else if (Helper.getText(binding.type).isEmpty()) {
             tempMap.put("type", " ");
         } else {
-            tempMap.put("type", binding.type.getText().toString());
+            tempMap.put("type", Helper.getText(binding.type));
         }
-        tempMap.put("typeName", binding.typename.getText().toString());
-        tempMap.put("spec", binding.spec.getText().toString());
-        tempMap.put("color", binding.colour.getText().toString());
-        if (binding.type.getText().toString().equals("e")) {
-            tempMap.put("spec2", binding.spec2.getText().toString());
+        tempMap.put("typeName", Helper.getText(binding.typename));
+        tempMap.put("spec", Helper.getText(binding.spec));
+        tempMap.put("color", Helper.getText(binding.colour));
+        if (Helper.getText(binding.type).equals("e")) {
+            tempMap.put("spec2", Helper.getText(binding.spec2));
         }
-        if (!TextUtils.isEmpty(binding.customImport.getText().toString())) {
-            tempMap.put("imports", binding.customImport.getText().toString());
+        if (!TextUtils.isEmpty(Helper.getText(binding.customImport))) {
+            tempMap.put("imports", Helper.getText(binding.customImport));
         }
-        tempMap.put("code", binding.code.getText().toString());
+        tempMap.put("code", Helper.getText(binding.code));
         tempMap.put("palette", String.valueOf(blockPosition));
         blocksList.add(tempMap);
-        FileUtil.writeFile(path, new Gson().toJson(blocksList));
+        FileUtil.writeFile(path, getGson().toJson(blocksList));
         SketchwareUtil.toast("Saved");
         finish();
     }
 
     private void insertBlockAt(int position) {
         HashMap<String, Object> tempMap = new HashMap<>();
-        tempMap.put("name", binding.name.getText().toString());
-        if (binding.type.getText().toString().equals("regular") || binding.type.getText().toString().isEmpty()) {
+        tempMap.put("name", Helper.getText(binding.name));
+        if (Helper.getText(binding.type).equals("regular") || Helper.getText(binding.type).isEmpty()) {
             tempMap.put("type", " ");
         } else {
-            tempMap.put("type", binding.type.getText().toString());
+            tempMap.put("type", Helper.getText(binding.type));
         }
-        tempMap.put("typeName", binding.typename.getText().toString());
-        tempMap.put("spec", binding.spec.getText().toString());
-        tempMap.put("color", binding.colour.getText().toString());
-        if (binding.type.getText().toString().equals("e")) {
-            tempMap.put("spec2", binding.spec2.getText().toString());
+        tempMap.put("typeName", Helper.getText(binding.typename));
+        tempMap.put("spec", Helper.getText(binding.spec));
+        tempMap.put("color", Helper.getText(binding.colour));
+        if (Helper.getText(binding.type).equals("e")) {
+            tempMap.put("spec2", Helper.getText(binding.spec2));
         }
-        if (!TextUtils.isEmpty(binding.customImport.getText().toString())) {
-            tempMap.put("imports", binding.customImport.getText().toString());
+        if (!TextUtils.isEmpty(Helper.getText(binding.customImport))) {
+            tempMap.put("imports", Helper.getText(binding.customImport));
         }
-        tempMap.put("code", binding.code.getText().toString());
+        tempMap.put("code", Helper.getText(binding.code));
         tempMap.put("palette", blocksList.get(position).get("palette"));
         blocksList.add(position, tempMap);
-        FileUtil.writeFile(path, new Gson().toJson(blocksList));
+        FileUtil.writeFile(path, getGson().toJson(blocksList));
         SketchwareUtil.toast("Saved");
         finish();
     }
 
     private void editBlock(int position) {
         HashMap<String, Object> tempMap = blocksList.get(position);
-        tempMap.put("name", binding.name.getText().toString());
-        if (binding.type.getText().toString().equals("regular") || binding.type.getText().toString().isEmpty()) {
+        tempMap.put("name", Helper.getText(binding.name));
+        if (Helper.getText(binding.type).equals("regular") || Helper.getText(binding.type).isEmpty()) {
             tempMap.put("type", " ");
         } else {
-            tempMap.put("type", binding.type.getText().toString());
+            tempMap.put("type", Helper.getText(binding.type));
         }
-        tempMap.put("typeName", binding.typename.getText().toString());
-        tempMap.put("spec", binding.spec.getText().toString());
-        tempMap.put("color", binding.colour.getText().toString());
-        if (binding.type.getText().toString().equals("e")) {
-            tempMap.put("spec2", binding.spec2.getText().toString());
+        tempMap.put("typeName", Helper.getText(binding.typename));
+        tempMap.put("spec", Helper.getText(binding.spec));
+        tempMap.put("color", Helper.getText(binding.colour));
+        if (Helper.getText(binding.type).equals("e")) {
+            tempMap.put("spec2", Helper.getText(binding.spec2));
         }
-        tempMap.put("imports", binding.customImport.getText().toString());
-        tempMap.put("code", binding.code.getText().toString());
-        FileUtil.writeFile(path, new Gson().toJson(blocksList));
+        tempMap.put("imports", Helper.getText(binding.customImport));
+        tempMap.put("code", Helper.getText(binding.code));
+        FileUtil.writeFile(path, getGson().toJson(blocksList));
         SketchwareUtil.toast("Saved");
         finish();
     }

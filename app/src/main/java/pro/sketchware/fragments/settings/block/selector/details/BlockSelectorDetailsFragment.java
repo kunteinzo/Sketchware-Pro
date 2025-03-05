@@ -1,5 +1,7 @@
 package pro.sketchware.fragments.settings.block.selector.details;
 
+import static pro.sketchware.utility.GsonUtils.getGson;
+
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -8,9 +10,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.google.android.material.appbar.MaterialToolbar;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
+import mod.hey.studios.util.Helper;
 import pro.sketchware.databinding.FragmentBlockSelectorManagerBinding;
 import pro.sketchware.databinding.DialogAddCustomActivityBinding;
 import pro.sketchware.databinding.DialogSelectorActionsBinding;
@@ -51,8 +52,7 @@ public class BlockSelectorDetailsFragment extends qA {
         handleInsetts(binding.getRoot());
 
         adapter = new BlockSelectorDetailsAdapter(
-            (selector, indexA) -> showActionsDialog(indexA),
-            (selector, indexA) -> SketchwareUtil.toast(selectors.get(index).getData().get(indexA))
+          (selector, indexA) -> showActionsDialog(indexA)
         );
         
         adapter.submitList(selectors.get(index).getData());
@@ -71,7 +71,7 @@ public class BlockSelectorDetailsFragment extends qA {
         aB dialog = new aB(requireActivity());
         dialog.b("New Selector Item");
         dialog.b("Create", v -> {
-          String newItem = dialogBinding.activityNameInput.getText().toString();
+            String newItem = Helper.getText(dialogBinding.activityNameInput);
             if (newItem != null && !newItem.isEmpty()) {
                 if (!isEdit) {
                     selectors.get(index).getData().add(newItem);
@@ -130,8 +130,7 @@ public class BlockSelectorDetailsFragment extends qA {
     }
 
     private void saveAll() {
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        FileUtil.writeFile(BlockSelectorConsts.BLOCK_SELECTORS_FILE.getAbsolutePath(), gson.toJson(selectors));
+        FileUtil.writeFile(BlockSelectorConsts.BLOCK_SELECTORS_FILE.getAbsolutePath(), getGson().toJson(selectors));
         SketchwareUtil.toast("Saved!");
     }
 

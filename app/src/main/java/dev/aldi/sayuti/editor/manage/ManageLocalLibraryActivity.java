@@ -7,49 +7,44 @@ import static dev.aldi.sayuti.editor.manage.LocalLibrariesUtil.getLocalLibFile;
 import static dev.aldi.sayuti.editor.manage.LocalLibrariesUtil.getLocalLibraries;
 import static dev.aldi.sayuti.editor.manage.LocalLibrariesUtil.rewriteLocalLibFile;
 
-import android.annotation.SuppressLint;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
-import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.PopupMenu;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
-import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.besome.sketch.lib.base.BaseAppCompatActivity;
 import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.gson.Gson;
 
-import java.io.File;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import mod.hey.studios.build.BuildSettings;
-import mod.hey.studios.util.Helper;
-import mod.jbk.util.AddMarginOnApplyWindowInsetsListener;
 
+import mod.hey.studios.util.Helper;
 import pro.sketchware.R;
 import pro.sketchware.databinding.ManageLocallibrariesBinding;
 import pro.sketchware.databinding.ViewItemLocalLibBinding;
 import pro.sketchware.databinding.ViewItemLocalLibSearchBinding;
-import pro.sketchware.utility.FileUtil;
 import pro.sketchware.utility.SketchwareUtil;
-import pro.sketchware.utility.UI;
 
 import a.a.a.MA;
 import a.a.a.mB;
@@ -76,6 +71,24 @@ public class ManageLocalLibraryActivity extends BaseAppCompatActivity {
         super.onCreate(savedInstanceState);
         binding = ManageLocallibrariesBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+
+        AtomicInteger existingBottomMargin = new AtomicInteger(-1);
+
+        ViewCompat.setOnApplyWindowInsetsListener(binding.downloadLibraryButton, (view, insets) -> {
+            Insets navigationBarsInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars());
+
+            ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) view.getLayoutParams();
+
+            if (existingBottomMargin.get() == -1) {
+                existingBottomMargin.set(params.bottomMargin);
+            }
+
+            params.bottomMargin = existingBottomMargin.get() + navigationBarsInsets.bottom;
+            view.setLayoutParams(params);
+
+            return WindowInsetsCompat.CONSUMED;
+        });
+
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.contextualToolbarContainer, (v, windowInsets) -> {
             var insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -117,16 +130,18 @@ public class ManageLocalLibraryActivity extends BaseAppCompatActivity {
                 binding.contextualToolbar.setTitle(String.valueOf(getSelectedLocalLibrariesCount()));
                 return true;
             } else if (id == R.id.action_delete_selected_local_libraries) {
-                new Thread(() -> {
-                    deleteSelectedLocalLibraries(adapter.getLocalLibraries());
-
+                k();
+                Executors.newSingleThreadExecutor().execute(() -> {
+                    deleteSelectedLocalLibraries(scId, adapter.getLocalLibraries(), projectUsedLibs);
                     runOnUiThread(() -> {
+                        h();
                         SketchwareUtil.toast("Deleted successfully");
-                        runLoadLocalLibrariesTask();
                         adapter.isSelectionModeEnabled = false;
+                        adapter.notifyDataSetChanged();
                         collapseContextualToolbar();
                     });
-                }).start();
+                });
+
                 return true;
             }
             return false;
@@ -266,6 +281,15 @@ public class ManageLocalLibraryActivity extends BaseAppCompatActivity {
         }
     }
 
+    private boolean isUsedLibrary(String libraryName) {
+        for (Map<String, Object> libraryMap : projectUsedLibs) {
+            if (libraryName.equals(libraryMap.get("name").toString())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public class LibraryAdapter extends RecyclerView.Adapter<LibraryAdapter.ViewHolder> {
         private final List<LocalLibrary> localLibraries = new ArrayList<>();
         public boolean isSelectionModeEnabled;
@@ -290,13 +314,13 @@ public class ManageLocalLibraryActivity extends BaseAppCompatActivity {
             binding.card.setOnClickListener(v -> {
                 if (isSelectionModeEnabled) {
                     toggleLocalLibrary(binding.card, library, onLocalLibrarySelectedStateChangedListener);
-                } else {
+                } else if (!notAssociatedWithProject) {
                     binding.materialSwitch.performClick();
                 }
             });
 
             binding.card.setOnLongClickListener(v -> {
-                if (isSelectionModeEnabled) {
+                if (isSelectionModeEnabled || notAssociatedWithProject) {
                     return false;
                 }
 
@@ -305,12 +329,13 @@ public class ManageLocalLibraryActivity extends BaseAppCompatActivity {
                 return true;
             });
 
-            binding.materialSwitch.setOnClickListener(v -> {
-                onItemClicked(binding, library.getName());
-            });
-
             binding.materialSwitch.setChecked(false);
             if (!notAssociatedWithProject) {
+
+                binding.materialSwitch.setOnClickListener(v -> {
+                    onItemClicked(binding, library.getName());
+                });
+
                 for (Map<String, Object> libraryMap : projectUsedLibs) {
                     if (library.getName().equals(libraryMap.get("name").toString())) {
                         binding.materialSwitch.setChecked(true);
@@ -337,6 +362,19 @@ public class ManageLocalLibraryActivity extends BaseAppCompatActivity {
             bindSelectedState(card, library);
             if (onLocalLibrarySelectedStateChangedListener != null) {
                 onLocalLibrarySelectedStateChangedListener.invoke(library);
+            }
+            if (library.isSelected() && isUsedLibrary(library.getName())) {
+                new MaterialAlertDialogBuilder(ManageLocalLibraryActivity.this)
+                        .setTitle("Warning")
+                        .setMessage("This library \"" + library.getName() + "\" already used in your project, removing it may break your project\rDo you want to continue removing it?")
+                        .setPositiveButton(Helper.getResString(R.string.common_word_yes), (dialog, which) -> {
+                            dialog.dismiss();
+                        })
+                        .setNegativeButton(Helper.getResString(R.string.common_word_cancel), (dialog, which) -> {
+                            toggleLocalLibrary(card, library, onLocalLibrarySelectedStateChangedListener);
+                            dialog.dismiss();
+                        })
+                        .show();
             }
         }
 
@@ -414,17 +452,18 @@ public class ManageLocalLibraryActivity extends BaseAppCompatActivity {
             binding.librarySize.setText(library.getSize());
             binding.libraryName.setSelected(true);
 
-            binding.getRoot().setOnClickListener(v -> {
-                binding.materialSwitch.performClick();
-            });
-
-            binding.materialSwitch.setOnClickListener(v -> {
-                onItemClicked(binding, library.getName());
-                adapter.notifyItemChanged(position);
-            });
-
             binding.materialSwitch.setChecked(false);
             if (!notAssociatedWithProject) {
+
+                binding.getRoot().setOnClickListener(v -> {
+                    binding.materialSwitch.performClick();
+                });
+
+                binding.materialSwitch.setOnClickListener(v -> {
+                    onItemClicked(binding, library.getName());
+                    adapter.notifyItemChanged(position);
+                });
+
                 for (Map<String, Object> libraryMap : projectUsedLibs) {
                     if (library.getName().equals(libraryMap.get("name").toString())) {
                         binding.materialSwitch.setChecked(true);

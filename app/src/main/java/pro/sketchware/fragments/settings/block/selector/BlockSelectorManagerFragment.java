@@ -1,6 +1,7 @@
 package pro.sketchware.fragments.settings.block.selector;
 
 import static mod.hey.studios.util.Helper.addBasicTextChangedListener;
+import static pro.sketchware.utility.GsonUtils.getGson;
 
 import android.app.Dialog;
 import android.os.Bundle;
@@ -16,8 +17,6 @@ import com.github.angads25.filepicker.model.DialogConfigs;
 import com.github.angads25.filepicker.model.DialogProperties;
 import com.github.angads25.filepicker.view.FilePickerDialog;
 import com.google.android.material.appbar.MaterialToolbar;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
@@ -32,6 +31,7 @@ import java.util.concurrent.Executors;
 
 import a.a.a.aB;
 import a.a.a.qA;
+import mod.hey.studios.util.Helper;
 import pro.sketchware.R;
 import pro.sketchware.databinding.DialogBlockConfigurationBinding;
 import pro.sketchware.databinding.DialogSelectorActionsBinding;
@@ -92,10 +92,9 @@ public class BlockSelectorManagerFragment extends qA {
     }
 
     private List<Selector> parseJson(String jsonString) {
-        Gson gson = new Gson();
         Type listType = new TypeToken<List<Selector>>() {
         }.getType();
-        return gson.fromJson(jsonString, listType);
+        return getGson().fromJson(jsonString, listType);
     }
 
     private void showCreateEditDialog(int index, boolean isEdit) {
@@ -125,7 +124,7 @@ public class BlockSelectorManagerFragment extends qA {
         dialog.b(!isEdit ? "New selector" : "Edit selector");
         dialog.a(dialogBinding.getRoot());
         dialog.b(!isEdit ? "Create" : "Save", v -> {
-            String selectorName = dialogBinding.palettesPath.getText().toString();
+            String selectorName = Helper.getText(dialogBinding.palettesPath);
             String selectorTitle = Objects.requireNonNull(dialogBinding.blocksPath.getText()).toString();
 
             if (selectorName.isEmpty()) {
@@ -324,12 +323,6 @@ public class BlockSelectorManagerFragment extends qA {
         return jsonElement.isJsonObject();
     }
 
-    private Gson getGson() {
-        return new GsonBuilder()
-                .setPrettyPrinting()
-                .create();
-    }
-
     private boolean itemAlreadyExists(String toCompare) {
         for (Selector selector : selectors) {
             if (selector.getName().equalsIgnoreCase(toCompare)) {
@@ -340,27 +333,13 @@ public class BlockSelectorManagerFragment extends qA {
     }
 
     private List<String> getTypeViewList() {
-        List<String> list = new ArrayList<>();
-        list.add("View");
-        list.add("ViewGroup");
-        list.add("LinearLayout");
-        list.add("RelativeLayout");
-        list.add("ScrollView");
-        list.add("HorizontalScrollView");
-        list.add("TextView");
-        list.add("EditText");
-        list.add("Button");
-        list.add("RadioButton");
-        list.add("CheckBox");
-        list.add("Switch");
-        list.add("ImageView");
-        list.add("SeekBar");
-        list.add("ListView");
-        list.add("Spinner");
-        list.add("WebView");
-        list.add("MapView");
-        list.add("ProgressBar");
-        return list;
+        return List.of(
+            "View", "ViewGroup", "LinearLayout", "RelativeLayout",
+            "ScrollView", "HorizontalScrollView", "TextView", "EditText",
+            "Button", "RadioButton", "CheckBox", "Switch", "ImageView",
+            "SeekBar", "ListView", "Spinner", "WebView", "MapView",
+            "ProgressBar"
+        );
     }
 
     @Override

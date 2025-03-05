@@ -13,10 +13,10 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.gson.Gson;
 import com.github.angads25.filepicker.model.DialogProperties;
 import com.github.angads25.filepicker.view.FilePickerDialog;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.gson.Gson;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -96,24 +96,23 @@ public class EventsManagerFragment extends qA {
             listenerBinding.listenerCustomImport.setText(existingListener.get("imports").toString());
             if ("true".equals(existingListener.get("s"))) {
                 listenerBinding.listenerIsIndependentClassOrMethod.setChecked(true);
-                listenerBinding.listenerCode.setText(existingListener.get("code").toString().replaceFirst("//" + listenerBinding.listenerName.getText().toString() + "\n", ""));
+                listenerBinding.listenerCode.setText(existingListener.get("code").toString().replaceFirst("//" + Helper.getText(listenerBinding.listenerName) + "\n", ""));
             }
         }
 
         var dialog = new MaterialAlertDialogBuilder(requireContext())
                 .setTitle(existingListener == null ? "New Listener" : "Edit Listener")
-                .setMessage("Type info of the listener")
                 .setView(listenerBinding.getRoot())
                 .setPositiveButton("Save", (di, i) -> {
-                    String listenerName = listenerBinding.listenerName.getText().toString();
+                    String listenerName = Helper.getText(listenerBinding.listenerName);
                     if (!listenerName.isEmpty()) {
                         HashMap<String, Object> hashMap = existingListener != null ? existingListener : new HashMap<>();
                         hashMap.put("name", listenerName);
                         hashMap.put("code", listenerBinding.listenerIsIndependentClassOrMethod.isChecked()
-                                ? "//" + listenerName + "\n" + listenerBinding.listenerCode.getText().toString()
-                                : listenerBinding.listenerCode.getText().toString());
+                                ? "//" + listenerName + "\n" + Helper.getText(listenerBinding.listenerCode)
+                                : Helper.getText(listenerBinding.listenerCode));
                         hashMap.put("s", listenerBinding.listenerIsIndependentClassOrMethod.isChecked() ? "true" : "false");
-                        hashMap.put("imports", listenerBinding.listenerCustomImport.getText().toString());
+                        hashMap.put("imports", Helper.getText(listenerBinding.listenerCustomImport));
                         if (position >= 0) {
                             listMap.set(position, hashMap);
                         } else {
@@ -171,8 +170,7 @@ public class EventsManagerFragment extends qA {
     private void importEvents(ArrayList<HashMap<String, Object>> data, ArrayList<HashMap<String, Object>> data2) {
         ArrayList<HashMap<String, Object>> events = new ArrayList<>();
         if (FileUtil.isExistFile(EventsManagerConstants.EVENTS_FILE.getAbsolutePath())) {
-            events = new Gson()
-                    .fromJson(FileUtil.readFile(EventsManagerConstants.EVENTS_FILE.getAbsolutePath()), Helper.TYPE_MAP_LIST);
+            events = new Gson().fromJson(FileUtil.readFile(EventsManagerConstants.EVENTS_FILE.getAbsolutePath()), Helper.TYPE_MAP_LIST);
         }
         events.addAll(data2);
         FileUtil.writeFile(EventsManagerConstants.EVENTS_FILE.getAbsolutePath(), new Gson().toJson(events));
